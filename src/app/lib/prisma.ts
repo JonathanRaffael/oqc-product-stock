@@ -21,13 +21,24 @@ url.searchParams.delete("sslrootcert");
 url.searchParams.delete("sslcert");
 url.searchParams.delete("sslkey");
 
-const caPath = path.join(process.cwd(), "ca.pem");
+// Ambil CA dari environment variable (Vercel)
+// Jika tidak ada, gunakan file ca.pem (local)
+let ca = process.env.DATABASE_CA_CERT;
 
-if (!fs.existsSync(caPath)) {
-  throw new Error(`File CA tidak ditemukan: ${caPath}`);
+if (ca) {
+  // Mengubah literal \n menjadi newline jika diperlukan
+  ca = ca.replace(/\\n/g, "\n");
+} else {
+  const caPath = path.join(process.cwd(), "ca.pem");
+
+  if (!fs.existsSync(caPath)) {
+    throw new Error(
+      "Sertifikat CA tidak ditemukan. Atur DATABASE_CA_CERT di Environment Variables Vercel."
+    );
+  }
+
+  ca = fs.readFileSync(caPath, "utf8");
 }
-
-const ca = fs.readFileSync(caPath, "utf8");
 
 const adapter = new PrismaPg({
   connectionString: url.toString(),
